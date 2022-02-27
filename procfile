@@ -1,1 +1,1 @@
-worker: python 3.10.2 hadi.py
+worker: python hadi.py
