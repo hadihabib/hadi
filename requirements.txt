@@ -1,0 +1,3 @@
+pytelegrambot
+gtts
+praw
