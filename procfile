@@ -1,1 +1,1 @@
-worker: python hadi.py
+bot: python hadi.py
