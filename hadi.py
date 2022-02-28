@@ -1,7 +1,5 @@
 from email import header
 from tracemalloc import start
-#from telegram.ext import*
-#from telegram import Update
 from telegram.ext import*
 import csv
 
