@@ -1,82 +1,159 @@
-from email import header
-from tracemalloc import start
-from telegram.ext import*
+from cgitb import text
+from fileinput import close
+import imp
+from tkinter import Text
+from unittest.mock import call
+from numpy import ones_like
+from telegram.ext import *
+from telegram import *
+import requests,json
+import telegram
+import pandas as pd
+
 import csv
+from openpyxl import Workbook
 
-print('bot started....')
-full_name=''
-birth_date=''
-phone=''
-itme=0
 
-def start (update,context):
-    update.message.reply_text("مرحبا بك في مشروع قادرون")
-    update.message.reply_text("/Exit")
-    update.message.reply_text("/Apply")
 
-def Aplly(update,context):
-    global itme, full_name, birth_date, phone
-    full_name=''
-    birth_date=''
-    phone=''
-    itme=0
-    update.message.reply_text("ادخل اسمك بالغة الانكليزية")
+TOKEN = "5137905230:AAFnc7m78VR6Ria5IdAnho2BW1xPZ0vwBRw"
+data = []
+dash_key = [['Name','birthday','address','Phone','qualification','University','college','specialization']]
 
-def Exit(update,context):
-    update.message.reply_text("شكرا لك")
+dat = json.load(open('users.json','r'))
+enter="مشروع يهدف إلى إحداث نقلة نوعية في مفهوم التعليم العالي والبحث العلمي من خلال الانتقال من التلقين النظري إلى التطبيق العملي وتحقيق الربط الفعال بين الجامعة والمجتمع عملياً وفق أسس علمية بما يسهم في تعزيز الاقتصاد الوطني والمساهمة في عملية البناء."
 
-def handlmsg(update,context):
-    print(update.message.text)
-    global itme, full_name, birth_date, phone
 
-    if itme == 0:
-        full_name= update.message.text
-        update.message.reply_text("عمرك")
+def start(update, context):     
+    update.message.reply_text(enter)
+    if update.message.chat.type == 'private':
+        user = str(update.message.chat.id)
+        if user not in data['users']:
+            data['users'].append(user)
+            if user not in data['Name']:
+                data['Name'][user] = ""
+            if user not in data['birthday']:
+                data['birthday'][user] = ""
+            if user not in data['Phone']:
+                data['Phone'][user] = ""
+            if user not in data['address']:
+                data['address'][user] = ""
+            if user not in data['qualification']:
+                data['qualification'][user] = ""
+            if user not in data['University']:
+                data['University'][user] = ""
+            if user not in data['college']:
+                data['college'][user] = ""
+            if user not in data['specialization']:
+                data['specialization'][user] = ""
+            data['process'][user] = "Name"
+            json.dump(data,open('users.json','w'))
+            reply_markup = telegram.ReplyKeyboardMarkup([[telegram.KeyboardButton("أريد الانضمام")]],resize_keyboard=True,one_time_keyboard=True)
+            update.message.reply_text(enter, reply_markup=reply_markup)
+            
 
-    if itme ==1:
-        birth_date=update.message.text
-        update.message.reply_text("رقم هاتفك")
+        else:
+            reply_markup = telegram.ReplyKeyboardMarkup([[telegram.KeyboardButton("خيارات")]],resize_keyboard=True,one_time_keyboard=True)
+            update.message.reply_text("لقد قمت بادخال بيانتك مسبقا  ", reply_markup=reply_markup)
 
-    if itme ==2:
-        phone=update.message.text
-        update.message.reply_text("تأكيد")
-        print(full_name)
-        print(birth_date)
-        print(phone)
-        update.message.reply_text("/submit")
-        update.message.reply_text("/cancel")
-
-    itme += 1
-
-def save(update,context):
- header =['full name', 'birth date', 'phone']
- data = [full_name,birth_date, phone]
- with open('applica21.csv', 'a', encoding='utf-8', newline='') as f:
-    writer= csv.writer(f)
+def one (update: Update, context: CallbackContext): 
     
-    writer.writerow(data)
+    json.dump(data,open('users.json','w'))
+    update.message.reply_text("الاسم الثلاثي")
 
- f.close()
- update.message.reply_text("thank you")
+def Restat (update: Update, context: CallbackContext):   
 
-def Cancel(update, context):
- update.message.reply_text("cancelled....")
- update.message.reply_text("/Apply")
- update.message.reply_text("/Exit")
+            user = str(update.message.chat.id)
+            data["users"].remove(user)
+            reply_markup = telegram.ReplyKeyboardMarkup([[telegram.KeyboardButton("تعديل")]],resize_keyboard=True,one_time_keyboard=True)
+            update.message.reply_text("....",reply_markup=reply_markup)
 
-def error(update, context):
-    print(f'update {update} caused error{context.error}')
 
-def main():
-    updater= Updater('5197293301:AAHvfkzAllCFO5CBDjDTHm7nRE_1ZphUnTk', use_context=True)
+
+def extra(update, context):
+    if update.message.chat.type == 'private':
+        user = str(update.message.chat.id)
+        if data["process"][user] == 'Name':
+            data['Name'][user] = update.message.text
+            data['process'][user] = 'birthday'
+            json.dump(data,open('users.json','w'))
+            update.message.reply_text("تاريخ الميلاد")
+        elif data["process"][user] == 'birthday':
+            data['birthday'][user] = update.message.text
+            data['process'][user] = 'address'
+            json.dump(data,open('users.json','w'))
+            update.message.reply_text("العنوان")
+        elif data["process"][user] == 'address':
+            data['address'][user] = update.message.text
+            data['process'][user] = "Phone"
+            json.dump(data,open('users.json','w'))
+            update.message.reply_text("رقم الهاتف")
+        elif data["process"][user] == 'Phone':
+            data['Phone'][user] = update.message.text
+            data['process'][user] = "qualification"
+            json.dump(data,open('users.json','w'))
+            reply_markup = telegram.ReplyKeyboardMarkup(
+                [
+                    [telegram.KeyboardButton("ثانوية عامة")],[telegram.KeyboardButton("معهد متوسط")]
+                    ,[telegram.KeyboardButton("إجازة جامعية")],[telegram.KeyboardButton("دبلوم")],
+                    [telegram.KeyboardButton("ماجستير")],[telegram.KeyboardButton("دكتوراه")]
+
+                ],
+                resize_keyboard=True,one_time_keyboard=True)
+            update.message.reply_text("المؤهل العلمي",reply_markup=reply_markup)
+            
+        elif data["process"][user] == 'qualification':
+            data['qualification'][user] = update.message.text
+            data['process'][user] = "University"
+            json.dump(data,open('users.json','w'))
+            update.message.reply_text("الجامعة")    
+        elif data["process"][user] == 'University':
+            data['University'][user] = update.message.text
+            data['process'][user] = "college"
+            json.dump(data,open('users.json','w'))
+            update.message.reply_text("الكلية")
+        elif data["process"][user] == 'college':
+            data['college'][user] = update.message.text
+            data['process'][user] = "specialization"
+            json.dump(data,open('users.json','w'))
+            update.message.reply_text("الاختصاص")
+        elif data["process"][user] == 'specialization':
+            data['specialization'][user] = update.message.text
+            data['process'][user] = "finished"
+            json.dump(data,open('users.json','w',encoding='utf-8'))
+            reply_markup = telegram.ReplyKeyboardMarkup([[telegram.KeyboardButton("خيارات"),telegram.KeyboardButton("تأكيد")]],resize_keyboard=True,one_time_keyboard=True)
+            update.message.reply_text(text="هل تريد تأكيد البيانات", reply_markup=reply_markup)
+
+
+def save(update: Update, context: CallbackContext):  
+            print("dsfs") 
+       
+            with open('users.csv','w', encoding="utf-8") as f:
+             f.write("username,Name ,birthday,address,Phone,qualification,University,college,specialization\n")
+             for u in data['users']:
+                d = "{},{},{},{},{},{},{},{},{}\n".format(u,data['Name'][u],data['birthday'][u],data['address'][u],data['Phone'][u],data['qualification'][u],data['University'][u],data['college'][u],data['specialization'][u])
+                f.write(d)
+            f.close()
+            
+            wb = Workbook()
+            ws=wb.active
+            with open('users.csv','r') as f:
+                for row in csv.reader(f):
+                    ws.append(row)
+            wb.save('users.xlsx')
+            f.close()
+            context.bot.send_document(chat_id=844534481, document=open( 'users.xlsx', 'rb'))
+
+
+if __name__ == '__main__':
+    data = json.load(open('users.json','r'))
+    updater = Updater(TOKEN,use_context=True)
     dp = updater.dispatcher
-    dp.add_handler(CommandHandler('start', start))
-    dp.add_handler(CommandHandler('Apply', Aplly))
-    dp.add_handler(CommandHandler('Submit', save))
-    dp.add_handler(CommandHandler('Cancel', Cancel))
-    dp.add_handler(MessageHandler(Filters.text, handlmsg))
-    dp.add_error_handler(error)
+    dp.add_handler(CommandHandler("start",start))
+    dp.add_handler(MessageHandler(Filters.text("تأكيد"),save))
+    dp.add_handler(MessageHandler(Filters.text("تعديل"),start))
+    dp.add_handler(MessageHandler(Filters.text("خيارات"),Restat))
+    dp.add_handler(MessageHandler(Filters.text("أريد الانضمام"),one))
+    dp.add_handler(MessageHandler(Filters.text,extra))
     updater.start_polling()
+    print("Bot Started")
     updater.idle()
-
-main()
